@@ -2,8 +2,8 @@
 // differentiation.sci  —  Student B Skeleton
 // Exponential Vibration Model: Vibration vs Hours
 //
-// NAME: ________________________________
-// ID:   ________________________________
+// NAME: Ryan D. Gabriel
+// ID:  2024-0831
 //
 // You must implement TWO functions in this file.
 // Do NOT change the function signatures.
