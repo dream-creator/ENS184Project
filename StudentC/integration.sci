@@ -38,44 +38,50 @@ funcprot(0);   // suppress redefinition warnings when re-running
 //   - Consider what R² should equal when all observed values are identical
 //     (SS_tot = 0) and handle that case explicitly.
 // ------------------------------------------------------------
+
+
 function [rmse, r2] = goodness_of_fit(y_actual, y_pred)
-    
-    // Number of data points
+
+    // TODO: validate that y_actual and y_pred have the same length
     n = length(y_actual);
-    
-    // 1. Calculate RMSE (Root-Mean-Square Error)
-    // Formula: sqrt( 1/n * sum( (actual - predicted)^2 ) )
-    mse = sum((y_actual - y_pred).^2) / n;
+    if length(y_pred) ~= n then
+        error("Vectors must have the same length");
+    end
+
+    // TODO: ensure column vectors
+    y_actual = y_actual(:);
+    y_pred = y_pred(:);
+
+    // TODO: compute residuals
+    res = y_actual - y_pred;
+
+    // TODO: compute RMSE
+    mse = sum(res.^2) / n;
     rmse = sqrt(mse);
 
-    // 2. Calculate R^2 (Coefficient of Determination)
+    // TODO: compute SS_res and SS_tot
     y_mean = mean(y_actual);
-    
-    // SST: Total Sum of Squares (variance of the actual data)
-    SST = sum((y_actual - y_mean).^2); 
-    
-    // SSE: Sum of Squared Errors (unexplained variance)
-    SSE = sum((y_actual - y_pred).^2); 
+    SS_res = sum(res.^2);
+    SS_tot = sum((y_actual - y_mean).^2);
 
-    // Edge Case Handling: Prevent "Divide by Zero" crash
-    // If SST is exactly 0, it means the actual data is a flat line.
-    if SST == 0 then
+    // TODO: compute r2 = 1 - SS_res / SS_tot  (handle SS_tot == 0)
+    if SS_tot == 0 then
         r2 = 0;
     else
-        r2 = 1 - (SSE / SST);
+        r2 = 1 - (SS_res / SS_tot);
     end
 
 endfunction
 
 
 // ------------------------------------------------------------
-/// Function 2: find_threshold_hour
+// Function 2: find_threshold_hour
 //
 // Uses bisection to find the hour h* at which the fitted
 // vibration curve first crosses the failure threshold.
 //
 // Input:
-//   hours     - sorted hour vector (from load_data)           (n)
+//   hours     - sorted hour vector (from load_data)            (n)
 //   vib_fit   - fitted vibration vector (from predict_vibration) (n)
 //   threshold - failure vibration level (scalar, e.g. 9.5)
 //
@@ -97,58 +103,85 @@ endfunction
 //     without calling predict_vibration again?
 //   - A for-loop with up to 100 iterations is plenty for convergence.
 // ------------------------------------------------------------
+
+
 function [h_star] = find_threshold_hour(hours, vib_fit, threshold)
-    
+
+    // TODO: force column vectors;  n = length(hours);
+    hours = hours(:);
+    vib_fit = vib_fit(:);
     n = length(hours);
-    idx = -1;
 
-    // 1. The Bracket Scan
-    // Loop through the vector to find where vibration crosses the threshold
+    // ---- Step 1: find the bracket ----
+    // Scan consecutive pairs (vib_fit(i), vib_fit(i+1)).
+    // A bracket exists when one value is below threshold and the next is
+    // at or above it, i.e. (vib_fit(i)-threshold)*(vib_fit(i+1)-threshold) <= 0.
+    // TODO: initialise i_lo = 0, then loop i = 1:n-1:
+    //         if (vib_fit(i)-threshold)*(vib_fit(i+1)-threshold) <= 0
+    //           i_lo = i;  break;
+    //         end
+    i_lo = 0;
     for i = 1:(n - 1)
-        if vib_fit(i) < threshold & vib_fit(i+1) >= threshold then
-            idx = i;
-            break; // We found the crossing, stop scanning
+        if (vib_fit(i) - threshold) * (vib_fit(i+1) - threshold) <= 0 then
+            i_lo = i;
+            break;
         end
     end
 
-    // If the loop finishes and idx is still -1, no crossing was found
-    if idx == -1 then
-        h_star = %inf;
-        return; // Exit function early
-    end
-
-    // 2. Setup for Bisection Method
-    hL = hours(idx);
-    hR = hours(idx+1);
-    vL = vib_fit(idx);
-    vR = vib_fit(idx+1);
-    
-    // Stopping condition: when the bracket is extremely small (e.g., 0.001 hours)
-    tol = 1e-3; 
-    
-    // 3. The Bisection Loop
-    while (hR - hL) > tol
-        // Calculate the midpoint hour
-        h_mid = (hL + hR) / 2;
-        
-        // Because vib_fit is an array of discrete points, we must interpolate
-        // to evaluate the vibration function g(h) at our new h_mid.
-        slope = (vR - vL) / (hR - hL);
-        v_mid = vL + slope * (h_mid - hL);
-
-        // Check which side of the threshold the midpoint falls on
-        if v_mid < threshold then
-            // The crossing is to the right of the midpoint
-            hL = h_mid;
-            vL = v_mid; // Update boundary vibration
+    // ---- Step 2: handle no-crossing case ----
+    // TODO: if i_lo == 0, no crossing was found.
+    //         if vib_fit(n) < threshold: h_star = %inf; return;
+    //         else: h_star = hours(1); return;   // already exceeded at start
+    if i_lo == 0 then
+        if vib_fit(n) < threshold then
+            h_star = %inf;
         else
-            // The crossing is to the left of (or exactly on) the midpoint
-            hR = h_mid;
-            vR = v_mid; // Update boundary vibration
+            h_star = hours(1);
+        end
+        return;
+    end
+
+    // ---- Step 3: set up bracket endpoints ----
+    // Define g(h) = (vib_fit value at h) - threshold.
+    // TODO: extract the hour values and g-values at index i_lo and i_lo+1.
+    h_lo = hours(i_lo);
+    h_hi = hours(i_lo+1);
+    g_lo = vib_fit(i_lo) - threshold;
+    g_hi = vib_fit(i_lo+1) - threshold;
+
+    // ---- Step 4: bisection loop ----
+    // TODO: repeat up to 100 times:
+    //   Compute the midpoint hour h_mid = (h_lo + h_hi) / 2.
+    //   You have only g at the two bracket endpoints — estimate g at h_mid
+    //   by linear interpolation between those two known g-values.
+    //   Based on the sign of g at h_mid, shrink the bracket to the half
+    //   that still contains the sign change.
+    //   Stop when the bracket width is less than 0.5 h.
+    for iter = 1:100
+        h_mid = (h_lo + h_hi) / 2;
+        
+        // Linear interpolation to estimate g at the midpoint
+        slope = (g_hi - g_lo) / (h_hi - h_lo);
+        g_mid = g_lo + slope * (h_mid - h_lo);
+
+        // Shrink the bracket
+        if g_mid < 0 then
+            // Crossing is to the right
+            h_lo = h_mid;
+            g_lo = g_mid;
+        else
+            // Crossing is to the left
+            h_hi = h_mid;
+            g_hi = g_mid;
+        end
+        
+        // Stop when width is less than 0.5
+        if (h_hi - h_lo) < 0.5 then
+            break;
         end
     end
 
-    // Return the final narrowed hour
-    h_star = (hL + hR) / 2;
+    // TODO: return h_star as the midpoint of the final bracket.
+    h_star = (h_lo + h_hi) / 2;
 
 endfunction
