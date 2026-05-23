@@ -26,7 +26,7 @@ end
 // y_actual = [0,0,0,0], y_pred = [1,1,1,1]  → RMSE = 1
 ya2 = [0; 0; 0; 0];
 yp2 = [1; 1; 1; 1];
-[rmse2, ~] = goodness_of_fit(ya2, yp2);
+[rmse2, dummy] = goodness_of_fit(ya2, yp2);
 if abs(rmse2 - 1) < tol then
     disp('  PASS  C2: goodness_of_fit RMSE = 1.0 on constant offset');
     passed = passed + 1;
@@ -41,7 +41,7 @@ end
 // SS_tot = same = 10  →  R² = 0
 ya3 = [1; 2; 3; 4; 5];
 yp3 = [3; 3; 3; 3; 3];
-[~, r2_3] = goodness_of_fit(ya3, yp3);
+[dummy, r2_3] = goodness_of_fit(ya3, yp3);
 if abs(r2_3 - 0) < tol then
     disp('  PASS  C3: predicting mean gives R² = 0');
     passed = passed + 1;
