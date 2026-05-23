@@ -17,9 +17,40 @@
 // ------------------------------------------------------------
 function [a, b] = linearize_vib(hours, vibration)
 
-    // TODO — see StudentB/differentiation.sci for task details
-    a = 0;
-    b = 0;
+    // ---- Input Validation ----
+    if length(hours) ~= length(vibration) then
+        error('linearize_vib: hours and vibration must have the same length.');
+    end
+
+    // Guard against non-positive vibration values.
+    // log(0) = -Inf and log(negative) = NaN; either poisons the entire fit.
+    valid_idx = find(vibration > 0);
+    if length(valid_idx) < 2 then
+        error('linearize_vib: need at least 2 positive vibration samples to fit.');
+    end
+
+    // ---- Force Column Vectors and apply valid-index mask ----
+    h = hours(valid_idx)(:);       // (m x 1) column, only valid rows
+    v = vibration(valid_idx)(:);   // (m x 1) column, only valid rows
+    n = length(h);
+
+    // ---- Log-Linearisation ----
+    // V(h) = a * exp(b*h)  =>  ln(V) = ln(a) + b*h
+    // Response:  w  = ln(V)
+    // Predictor: h  (operational hours)
+    w = log(v);
+
+    // ---- Design Matrix: [1, h] ----
+    Z = [ones(n, 1), h];   // (n x 2)
+
+    // ---- Normal Equations: c = (Z'Z) \ (Z'w) ----
+    c = (Z' * Z) \ (Z' * w);   // c = [c0; c1]
+
+    // ---- Recover original parameters ----
+    // c(1) = ln(a)  =>  a = exp(c(1))
+    // c(2) = b      =>  b = c(2)
+    a = exp(c(1));
+    b = c(2);
 
 endfunction
 
@@ -31,7 +62,9 @@ endfunction
 // ------------------------------------------------------------
 function [vib_query] = predict_vibration(a, b, h_query)
 
-    // TODO — see StudentB/differentiation.sci for task details
-    vib_query = zeros(size(h_query, 1), size(h_query, 2));
+    // Evaluate V(h) = a * exp(b * h) element-wise.
+    // .* ensures this works for scalar, row vector, or column vector h_query.
+    vib_query = a .* exp(b .* h_query);
 
 endfunction
+
