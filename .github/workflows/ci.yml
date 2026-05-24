@@ -1,0 +1,176 @@
+name: ENS184 CI/CD Setup
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  environment-check:
+    name: Environment Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Check Required Files
+        run: |
+          echo "Verifying file structure..."
+          required_files=(
+            "StudentA/interpolation.sci"
+            "StudentB/differentiation.sci"
+            "StudentC/integration.sci"
+            "StudentD/load_data.sci"
+            "StudentD/health_dashboard.sci"
+            "StudentD/main.sce"
+            "phm_project/interpolation/interpolation.sci"
+            "phm_project/differentiation/differentiation.sci"
+            "phm_project/integration/integration.sci"
+            "phm_project/data_loader/load_data.sci"
+            "phm_project/user_interface/health_dashboard.sci"
+            "phm_project/main.sce"
+            "pump_health_data.csv"
+          )
+          missing=0
+          for file in "${required_files[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "::error::Missing required file: $file"
+              missing=$((missing+1))
+            else
+              echo "Found: $file"
+            fi
+          done
+          if [ $missing -ne 0 ]; then
+            echo "Environment check failed: $missing required files are missing."
+            exit 1
+          fi
+          echo "All required files exist!"
+
+  test-B:
+    name: Run Student B Unit Tests
+    runs-on: ubuntu-latest
+    needs: environment-check
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Scilab & Xvfb
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y scilab xvfb
+
+      - name: Run Student B Suite
+        run: |
+          xvfb-run scilab -nw -e "exec('phm_project/test_suites/test_studentB.sci'); if failed > 0 | passed < 5 then disp('FAILED CHECKS'); exit(1); else exit(0); end"
+
+  test-C:
+    name: Run Student C Unit Tests
+    runs-on: ubuntu-latest
+    needs: environment-check
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Scilab & Xvfb
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y scilab xvfb
+
+      - name: Run Student C Suite
+        run: |
+          xvfb-run scilab -nw -e "exec('phm_project/test_suites/test_studentC.sci'); if failed > 0 | passed < 5 then disp('FAILED CHECKS'); exit(1); else exit(0); end"
+
+  test-D:
+    name: Run Student D Unit Tests
+    runs-on: ubuntu-latest
+    needs: environment-check
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Scilab & Xvfb
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y scilab xvfb
+
+      - name: Run Student D Suite
+        run: |
+          xvfb-run scilab -nw -e "exec('phm_project/test_suites/test_studentD.sci'); if failed > 0 | passed < 5 then disp('FAILED CHECKS'); exit(1); else exit(0); end"
+
+  numerical-accuracy:
+    name: Numerical Accuracy Checks
+    runs-on: ubuntu-latest
+    needs: [test-B, test-C, test-D]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Scilab & Xvfb
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y scilab xvfb
+
+      - name: Verify Numerical Accuracy
+        run: |
+          xvfb-run scilab -nw -f .github/workflows/scripts/verify_accuracy.sci
+
+  methodology-check:
+    name: Methodology Compliance Checks
+    runs-on: ubuntu-latest
+    needs: [test-B, test-C, test-D]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Verify Methodology Compliance
+        run: |
+          python3 .github/workflows/scripts/verify_methodology.py
+
+  integration-test:
+    name: Run Integration Tests
+    runs-on: ubuntu-latest
+    needs: [numerical-accuracy, methodology-check]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Scilab & Xvfb
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y scilab xvfb
+
+      - name: Run Full Pipeline Integration Test
+        run: |
+          xvfb-run scilab -nw -e "exec('phm_project/test_suites/test_integration.sci'); if failed > 0 | passed < 6 then disp('FAILED CHECKS'); exit(1); else exit(0); end"
+
+      - name: Upload Pump Health Report Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pump-health-report
+          path: pump_health_report_v2.png
+
+  summary:
+    name: Pipeline Summary
+    runs-on: ubuntu-latest
+    needs: integration-test
+    steps:
+      - name: Output Summary Report
+        run: |
+          echo "=================================================="
+          echo "       ENS184 CI/CD PIPELINE COMPLETE"
+          echo "=================================================="
+          echo "  ✔ environment-check : PASSED"
+          echo "  ✔ test-B            : PASSED (5/5 checks)"
+          echo "  ✔ test-C            : PASSED (5/5 checks)"
+          echo "  ✔ test-D            : PASSED (5/5 checks)"
+          echo "  ✔ numerical-accuracy: PASSED (a~2.09, b~0.00035, R2>0.95, h* in [3000, 6000])"
+          echo "  ✔ methodology-check : PASSED (no inv(), no csvRead(), uses read_csv)"
+          echo "  ✔ integration-test  : PASSED (6/6 checks, artifact archived)"
+          echo "=================================================="

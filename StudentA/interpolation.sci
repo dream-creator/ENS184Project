@@ -1,88 +1,62 @@
 // ============================================================
 // interpolation.sci  —  Student A Skeleton
 // Polynomial Calibration Fit: Pressure vs Voltage
-//
-// NAME: ________________________________
-// ID:   ________________________________
-//
-// You must implement TWO functions in this file.
-// Do NOT change the function signatures.
-//
-// FORBIDDEN: Do NOT use Scilab's built-in polyfit(), reglin(), or
-// any other curve-fitting builtin.  Build the design matrix and
-// solve the Normal Equations yourself.
 // ============================================================
 
 funcprot(0);   // suppress redefinition warnings when re-running
 
 // ------------------------------------------------------------
 // Function 1: poly_fit
-//
-// Fits a degree-k polynomial to data (x, y) using a
-// design matrix Z and the Normal Equations.
-//
-// Input:
-//   x     - predictor vector (n elements), e.g. sensor_voltage
-//   y     - response vector  (n elements), e.g. diff_pressure
-//   k     - polynomial degree (integer >= 1)
-//
-// Output:
-//   coeff - coefficient vector [c0; c1; ...; ck] of length k+1
-//           such that  P(x) = c0 + c1*x + c2*x^2 + ... + ck*x^k
-//
-// Hints:
-//   - Ensure x and y are column vectors before proceeding.
-//   - Build a rectangular matrix Z where each column contains a
-//     different power of x.  How many rows and columns should Z have?
-//   - Once Z is assembled, what matrix equation must you solve to
-//     minimise the sum of squared residuals?  (See the manual.)
-//   - Use Scilab's backslash operator (\) to solve the resulting system.
+// Input:  x (n), y (n), k (degree)
+// Output: coeff [c0; c1; ...; ck]
 // ------------------------------------------------------------
 function [coeff] = poly_fit(x, y, k)
 
-    // TODO: validate inputs — check length(x)==length(y) and 1<=k<=n-1
+    if length(x) ~= length(y) then
+        error('poly_fit: x and y must have the same length.');
+    end
+    n = length(x);
+    if k < 1 | k > n - 1 then
+        error('poly_fit: polynomial degree k must satisfy 1 <= k <= n-1.');
+    end
 
-    // TODO: force column vectors: x = x(:);  y = y(:);  n = length(x);
+    // Force column vectors
+    x = x(:);
+    y = y(:);
 
-    // TODO: build Z (n x k+1): column j holds x.^(j-1), for j = 1 to k+1
-    //       Hint: initialise Z = zeros(n, k+1), then fill it in a loop.
+    // Build Z (n x k+1) design matrix: column j holds x.^(j-1), for j = 1 to k+1
+    Z = zeros(n, k + 1);
+    for j = 1:(k + 1)
+        Z(:, j) = x .^ (j - 1);
+    end
 
-    // TODO: form the two matrices that appear in the Normal Equations
-    //       (one is (k+1)x(k+1), one is (k+1)x1), then solve the system
-    //       using the backslash operator (\).
+    // Normal Equations: coeff = (Z'*Z) \ (Z'*y)
+    coeff = (Z' * Z) \ (Z' * y);
 
 endfunction
 
 
 // ------------------------------------------------------------
 // Function 2: eval_poly
-//
-// Evaluates the fitted polynomial at one or more query points.
-//
-// Input:
-//   coeff   - coefficient vector from poly_fit() (length k+1)
-//   x_query - scalar or column vector of x-values to evaluate
-//
-// Output:
-//   y_query - polynomial values at x_query (column vector)
-//
-// Hints:
-//   - Naively computing c0 + c1*x + c2*x^2 + ... requires many separate
-//     power calculations.  Horner's method avoids this: rewrite the
-//     polynomial so that each step only multiplies by x once.
-//     Trace through the degree-2 case by hand to see the pattern.
-//   - Think carefully about the loop direction (which coefficient do you
-//     start with, and which do you end on?).
-//   - Loop over each element of x_query if it is a vector.
+// Input:  coeff (k+1), x_query (scalar or vector)
+// Output: y_query (same size as x_query)
 // ------------------------------------------------------------
 function [y_query] = eval_poly(coeff, x_query)
 
-    // TODO: ensure coeff and x_query are column vectors; allocate y_query
-    //       as a zeros column vector with the same number of elements as x_query.
+    coeff = coeff(:);
+    x_query = x_query(:);
+    n_q = length(x_query);
+    y_query = zeros(n_q, 1);
+    k = length(coeff) - 1;
 
-    // TODO: for each element of x_query, apply Horner's method:
-    //       start at the highest-degree coefficient and work downward,
-    //       accumulating the result one multiplication per step.
-    //       Store each final result in the corresponding position of y_query.
+    // Horner's method to evaluate the polynomial
+    for j = 1:n_q
+        xq = x_query(j);
+        val = coeff(k+1);
+        for i = k:-1:1
+            val = coeff(i) + val * xq;
+        end
+        y_query(j) = val;
+    end
 
 endfunction

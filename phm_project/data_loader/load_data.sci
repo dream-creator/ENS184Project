@@ -1,29 +1,45 @@
 // ============================================================
-// load_data.sci  —  Data Loader Module  [INTEGRATION COPY]
-// Pump Health Monitoring  |  ENS 184 Mini-Project
+// load_data.sci  —  Student D Skeleton (Task D1)
+// Load and Parse Sensor CSV Data
 //
-// HOW TO USE THIS FILE:
-//   1. Develop and test your code in  StudentD/load_data.sci
-//   2. When ready to run the test suite, COPY your finished
-//      implementation into THIS file (replace the stub below).
-//   3. Run:  exec('test_suites/test_studentD.sci', -1)
-//      from the phm_project/ directory.
+// NAME: ________________________________
+// ID:   ________________________________
+//
+// Implement ONE function in this file.
+// Do NOT change the function signature.
 // ============================================================
+
+funcprot(0);   // suppress redefinition warnings when re-running
 
 // ------------------------------------------------------------
 // Function: load_data
-// Input:  fname     - path to the CSV file (string)
-// Output: pressure  - differential pressure (bar)      (n x 1)
-//         voltage   - sensor voltage (mV)              (n x 1)
-//         hours     - operational hours (h)            (n x 1)
-//         vibration - vibration amplitude (mm/s_rms)   (n x 1)
+// Input:  fname - full path to the CSV file (string)
+// Output: pressure, voltage, hours, vibration (all n x 1)
 // ------------------------------------------------------------
 function [pressure, voltage, hours, vibration] = load_data(fname)
 
-    // TODO — see StudentD/load_data.sci for task details
-    pressure  = [];
-    voltage   = [];
-    hours     = [];
-    vibration = [];
+    // Check that the file exists
+    if ~isfile(fname) then
+        error('load_data: file not found: ' + fname);
+    end
+
+    // Read entire CSV into a string matrix
+    // read_csv returns every cell as a string, including numeric values
+    raw = read_csv(fname, ',');
+
+    // Skip header row (row 1 starts with '#')
+    // raw(2:$, :) means: from row 2 to the last row, all columns
+    data_str = raw(2:$, :);
+
+    // Convert string matrix to numeric matrix
+    // evstr() evaluates each string as a Scilab expression
+    data = evstr(data_str);
+
+    // Extract the four columns:
+    // col 1 = pressure, col 2 = voltage, col 3 = hours, col 4 = vibration
+    pressure  = data(:, 1);
+    voltage   = data(:, 2);
+    hours     = data(:, 3);
+    vibration = data(:, 4);
 
 endfunction

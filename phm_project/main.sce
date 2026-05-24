@@ -25,48 +25,40 @@ THRESHOLD = 9.5;   // vibration failure level [mm/s_rms] — fixed by spec
 // STEP 1 — Load Data  (pre-implemented for all teams)
 // ============================================================
 disp('=== Step 1: Load sensor data ===');
-
-// TODO: call load_data(data_file) to get [pressure, voltage, hours, vibration]
-
+[pressure, voltage, hours, vibration] = load_data(data_file);
 
 // ============================================================
 // STEP 2 — Student A: Polynomial Fit  (voltage → pressure)
 // ============================================================
 disp('=== Step 2: Polynomial fit (voltage → pressure, k=3) ===');
-
-// TODO: call poly_fit(voltage, pressure, 3)  → coeff_poly
-// TODO: call eval_poly(coeff_poly, voltage)  → press_poly
-
+coeff_poly = poly_fit(voltage, pressure, 3);
+press_poly = eval_poly(coeff_poly, voltage);
 
 // ============================================================
 // STEP 3 — Student B: Exponential Fit  (hours → vibration)
 // ============================================================
 disp('=== Step 3: Exponential fit (hours → vibration) ===');
-
-// TODO: call linearize_vib(hours, vibration)        → [a_exp, b_exp]
-// TODO: call predict_vibration(a_exp, b_exp, hours) → vib_exp
-
+[a_exp, b_exp] = linearize_vib(hours, vibration);
+vib_exp        = predict_vibration(a_exp, b_exp, hours);
 
 // ============================================================
 // STEP 4 — Student C: Metrics + Failure Hour
 // ============================================================
 disp('=== Step 4: Goodness-of-fit and failure hour ===');
+[rmse_A, r2_A] = goodness_of_fit(pressure, press_poly);
+[rmse_B, r2_B] = goodness_of_fit(vibration, vib_exp);
+mprintf('  Polynomial calibration: RMSE = %.4f bar, R2 = %.4f\n', rmse_A, r2_A);
+mprintf('  Vibration model       : RMSE = %.4f mm/s, R2 = %.4f\n', rmse_B, r2_B);
 
-// TODO: call goodness_of_fit(pressure, press_poly)           → [rmse_A, r2_A]
-// TODO: call goodness_of_fit(vibration, vib_exp)             → [rmse_B, r2_B]
-// TODO: print rmse_A, r2_A, rmse_B, r2_B
-// TODO: call find_threshold_hour(hours, vib_exp, THRESHOLD)  → h_star
-// TODO: print h_star
-
+h_star = find_threshold_hour(hours, vib_exp, THRESHOLD);
+mprintf('  Predicted failure hour (h*): %.2f h\n', h_star);
 
 // ============================================================
 // STEP 5 — Student D: Health Index + Plot
 // ============================================================
 disp('=== Step 5: Health Index and report plot ===');
-
-// TODO: call compute_health_index(vibration, THRESHOLD) → HI
-// TODO: call plot_report(hours, vibration, vib_exp, HI, THRESHOLD, h_star)
-
+HI = compute_health_index(vibration, THRESHOLD);
+plot_report(hours, vibration, vib_exp, HI, THRESHOLD, h_star);
 
 // ============================================================
 // SUMMARY REPORT — print to console
@@ -75,14 +67,14 @@ disp('');
 disp('==================================================');
 disp('   PUMP HEALTH MONITORING  —  SUMMARY            ');
 disp('==================================================');
-// TODO: use mprintf to print each item, e.g.:
-//   mprintf('  Data points loaded   : %d\n',       length(hours));
-//   mprintf('  Exp. model           : a=%.4f, b=%.6f\n', a_exp, b_exp);
-//   mprintf('  Polynomial fit R2    : %.4f  (RMSE = %.4f bar)\n', r2_A, rmse_A);
-//   mprintf('  Exponential fit R2   : %.4f  (RMSE = %.4f mm/s)\n', r2_B, rmse_B);
-//   if isinf(h_star)
-//       disp('  Predicted failure    : threshold not reached');
-//   else
-//       mprintf('  Predicted failure    : h* = %.1f h\n', h_star);
-//   end
-//   mprintf('  Current Health Index : %.2f\n', HI($));
+mprintf('  Data points loaded   : %d\n',       length(hours));
+mprintf('  Exp. model           : a=%.4f, b=%.6f\n', a_exp, b_exp);
+mprintf('  Polynomial fit R2    : %.4f  (RMSE = %.4f bar)\n', r2_A, rmse_A);
+mprintf('  Exponential fit R2   : %.4f  (RMSE = %.4f mm/s)\n', r2_B, rmse_B);
+if isinf(h_star)
+    disp('  Predicted failure    : threshold not reached');
+else
+    mprintf('  Predicted failure    : h* = %.1f h\n', h_star);
+end
+mprintf('  Current Health Index : %.2f\n', HI($));
+disp('==================================================');
