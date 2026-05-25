@@ -1,32 +1,24 @@
-// ============================================================
-// main.sce  —  Student D Skeleton (Task D3)
-// FlowGuard 5000 — Pump Health Monitoring  (Version 2)
+// main.sce  —  Student D (Task D3)
+// FlowGuard 5000 — Pump Health Monitoring (Version 2)
 //
 // NAME: ________________________________
 // ID:   ________________________________
-//
-// This is the MAIN SCRIPT that ties all modules together.
-// Fill in the TODO sections to call functions from each module.
-// Do NOT modify function signatures in other files.
-//
-// Run this script from the StudentD/ directory.
-// ============================================================
 
 funcprot(0);
 
 // ---- Path Setup ----
-base_dir  = get_absolute_file_path('main.sce');      // StudentD/
-phm_dir   = fullfile(base_dir, '..', 'phm_project'); // phm_project/
+base_dir  = get_absolute_file_path('main.sce');
+phm_dir   = fullfile(base_dir, '..', 'phm_project');
 data_file = fullfile(base_dir, '..', 'pump_health_data.csv');
 
-// ---- Load Modules (StudentD owns load_data and health_dashboard) ----
+// ---- Load Modules ----
 exec(fullfile(base_dir, 'load_data.sci'),                           -1);
 exec(fullfile(phm_dir,  'interpolation',  'interpolation.sci'),     -1);
 exec(fullfile(phm_dir,  'differentiation','differentiation.sci'),   -1);
 exec(fullfile(phm_dir,  'integration',    'integration.sci'),       -1);
 exec(fullfile(base_dir, 'health_dashboard.sci'),                    -1);
 
-THRESHOLD = 9.5;   // mm/s_rms — do not change
+THRESHOLD = 9.5;
 
 // ============================================================
 // STEP 1 — Load Data
@@ -56,7 +48,6 @@ disp('=== Step 4: Goodness-of-fit and failure hour ===');
 [rmse_B, r2_B] = goodness_of_fit(vibration, vib_exp);
 mprintf('  Polynomial calibration: RMSE = %.4f bar, R2 = %.4f\n', rmse_A, r2_A);
 mprintf('  Vibration model       : RMSE = %.4f mm/s, R2 = %.4f\n', rmse_B, r2_B);
-
 h_star = find_threshold_hour(hours, vib_exp, THRESHOLD);
 mprintf('  Predicted failure hour (h*): %.2f h\n', h_star);
 
@@ -68,7 +59,7 @@ HI = compute_health_index(vibration, THRESHOLD);
 plot_report(hours, vibration, vib_exp, HI, THRESHOLD, h_star);
 
 // ============================================================
-// SUMMARY REPORT — print to console
+// SUMMARY REPORT
 // ============================================================
 disp('');
 disp('==================================================');
@@ -76,12 +67,15 @@ disp('   PUMP HEALTH MONITORING  —  SUMMARY            ');
 disp('==================================================');
 mprintf('  Data points loaded   : %d\n',       length(hours));
 mprintf('  Exp. model           : a=%.4f, b=%.6f\n', a_exp, b_exp);
-mprintf('  Polynomial fit R2    : %.4f  (RMSE = %.4f bar)\n', r2_A, rmse_A);
-mprintf('  Exponential fit R2   : %.4f  (RMSE = %.4f mm/s)\n', r2_B, rmse_B);
-if isinf(h_star)
+mprintf('  Polynomial fit R2    : %.4f  (RMSE = %.4f bar)\n',   r2_A, rmse_A);
+mprintf('  Exponential fit R2   : %.4f  (RMSE = %.4f mm/s)\n',  r2_B, rmse_B);
+
+// FIX: added 'then' — required by Scilab syntax
+if isinf(h_star) then
     disp('  Predicted failure    : threshold not reached');
 else
     mprintf('  Predicted failure    : h* = %.1f h\n', h_star);
 end
+
 mprintf('  Current Health Index : %.2f\n', HI($));
 disp('==================================================');

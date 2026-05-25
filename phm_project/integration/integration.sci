@@ -38,8 +38,6 @@ funcprot(0);   // suppress redefinition warnings when re-running
 //   - Consider what R² should equal when all observed values are identical
 //     (SS_tot = 0) and handle that case explicitly.
 // ------------------------------------------------------------
-
-
 function [rmse, r2] = goodness_of_fit(y_actual, y_pred)
 
     // TODO: validate that y_actual and y_pred have the same length
@@ -81,7 +79,7 @@ endfunction
 // vibration curve first crosses the failure threshold.
 //
 // Input:
-//   hours     - sorted hour vector (from load_data)            (n)
+//   hours     - sorted hour vector (from load_data)             (n)
 //   vib_fit   - fitted vibration vector (from predict_vibration) (n)
 //   threshold - failure vibration level (scalar, e.g. 9.5)
 //
@@ -103,8 +101,6 @@ endfunction
 //     without calling predict_vibration again?
 //   - A for-loop with up to 100 iterations is plenty for convergence.
 // ------------------------------------------------------------
-
-
 function [h_star] = find_threshold_hour(hours, vib_fit, threshold)
 
     // TODO: force column vectors;  n = length(hours);
@@ -157,27 +153,24 @@ function [h_star] = find_threshold_hour(hours, vib_fit, threshold)
     //   Based on the sign of g at h_mid, shrink the bracket to the half
     //   that still contains the sign change.
     //   Stop when the bracket width is less than 0.5 h.
-    for iter = 1:100
+    
+    tol = 0.5;
+    while (h_hi - h_lo) > tol
         h_mid = (h_lo + h_hi) / 2;
         
         // Linear interpolation to estimate g at the midpoint
         slope = (g_hi - g_lo) / (h_hi - h_lo);
         g_mid = g_lo + slope * (h_mid - h_lo);
 
-        // Shrink the bracket
-        if g_mid < 0 then
-            // Crossing is to the right
-            h_lo = h_mid;
-            g_lo = g_mid;
-        else
-            // Crossing is to the left
+        // Shrink the bracket using standard bracket update condition
+        if g_lo * g_mid <= 0 then
+            // The sign change is in the left half (between lo and mid)
             h_hi = h_mid;
             g_hi = g_mid;
-        end
-        
-        // Stop when width is less than 0.5
-        if (h_hi - h_lo) < 0.5 then
-            break;
+        else
+            // The sign change is in the right half (between mid and hi)
+            h_lo = h_mid;
+            g_lo = g_mid;
         end
     end
 
