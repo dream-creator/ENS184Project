@@ -1,8 +1,8 @@
 // main.sce  —  Student D (Task D3)
 // FlowGuard 5000 — Pump Health Monitoring (Version 2)
 //
-// NAME: ________________________________
-// ID:   ________________________________
+// NAME: Eborda , Gabriel , Ladlad
+// ID:  2024-0831 / 2024-1015 / 2024-0746
 
 funcprot(0);
 
