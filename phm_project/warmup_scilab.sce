@@ -131,7 +131,7 @@ disp('PART 6  OK');
 // ============================================================
 //  PART 7:  Loops and Horner's method
 // ============================================================
-disp('=== PART 7: Loops and Horner\'s method ===');
+disp('=== PART 7: Loops and Horner''s method ===');
 
 // Evaluate p(x) = 1 + 2*x + 3*x^2  at x = 2  (answer = 1+4+12 = 17)
 coeff  = [1; 2; 3];   // [c0; c1; c2] --- constant term FIRST
