@@ -27,4 +27,7 @@ else
     echo "FAIL: pump_health_report_v2.png not found"
 fi
 
+echo ""
 echo "=== ALL DONE ==="
+echo ""
+read -p "Press Enter to close..."
