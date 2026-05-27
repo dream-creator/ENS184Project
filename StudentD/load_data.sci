@@ -43,4 +43,4 @@ function [pressure, voltage, hours, vibration] = load_data(fname)
     vibration = data(:, 4);
 
 endfunction
-endfunction
+
