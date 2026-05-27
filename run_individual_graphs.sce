@@ -2,14 +2,20 @@
 funcprot(0);
 disp('=== Initializing All Modules ===');
 
-exec('phm_project/data_loader/load_data.sci', -1);
-exec('phm_project/interpolation/interpolation.sci', -1);
-exec('phm_project/differentiation/differentiation.sci', -1);
-exec('phm_project/integration/integration.sci', -1);
-exec('phm_project/user_interface/health_dashboard.sci', -1);
+// Dynamically get the current directory of this script
+base_dir = get_absolute_file_path('run_individual_graphs.sce');
+
+// Load all modules using cross-platform paths
+exec(fullfile(base_dir, 'phm_project', 'data_loader', 'load_data.sci'), -1);
+exec(fullfile(base_dir, 'phm_project', 'interpolation', 'interpolation.sci'), -1);
+exec(fullfile(base_dir, 'phm_project', 'differentiation', 'differentiation.sci'), -1);
+exec(fullfile(base_dir, 'phm_project', 'integration', 'integration.sci'), -1);
+exec(fullfile(base_dir, 'phm_project', 'user_interface', 'health_dashboard.sci'), -1);
 
 THRESHOLD = 9.5;
-[pressure, voltage, hours, vibration] = load_data('pump_health_data.csv');
+// Safely locate the CSV data file using fullfile
+data_file = fullfile(base_dir, 'pump_health_data.csv');
+[pressure, voltage, hours, vibration] = load_data(data_file);
 
 // --- Calculations ---
 coeff_poly = poly_fit(voltage, pressure, 3);
@@ -61,20 +67,4 @@ if h_known then legend(['Measured vibration'; 'Exponential fit'; 'Failure thresh
 else legend(['Measured vibration'; 'Exponential fit'; 'Failure threshold'], 4); end
 xgrid(1);
 xs2png(fig3, 'graph_3_degradation.png');
-disp('Saved: graph_3_degradation.png');
-
-// --- Graph 4: Health Index ---
-fig4 = scf(4); clf(); fig4.figure_size = [800, 600];
-plot(hours, 0.75 .* ones(n, 1), 'g--');
-plot(hours, 0.90 .* ones(n, 1), 'y--');
-plot(hours, ones(n, 1), 'r--');
-plot(hours, HI, 'b-');
-if h_known then plot([h_star, h_star], [0, 1.05], 'm-.'); end
-xlabel('Operational Hours (h)'); ylabel('Health Index (HI)');
-title('[Students C+D]  Health Index and Failure Prediction');
-if h_known then legend(['GOOD/WARN (0.75)'; 'WARN/CRIT (0.90)'; 'Failure (1.0)'; 'Health Index'; 'Predicted h*'], 2);
-else legend(['GOOD/WARN (0.75)'; 'WARN/CRIT (0.90)'; 'Failure (1.0)'; 'Health Index'], 2); end
-xgrid(1);
-xs2png(fig4, 'graph_4_health_index.png');
-disp('Saved: graph_4_health_index.png');
-
+disp('Saved: graph_3_degradation.png
