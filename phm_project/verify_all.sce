@@ -1,11 +1,14 @@
-// Load all modules
-exec('/home/ryan/Documents/Projex/ENS184Project/phm_project/data_loader/load_data.sci', -1);
-exec('/home/ryan/Documents/Projex/ENS184Project/phm_project/differentiation/differentiation.sci', -1);
-exec('/home/ryan/Documents/Projex/ENS184Project/phm_project/integration/integration.sci', -1);
-exec('/home/ryan/Documents/Projex/ENS184Project/phm_project/user_interface/health_dashboard.sci', -1);
+// Dynamically get the current Windows directory of this script
+base_dir = get_absolute_file_path('verify_all.sce');
 
-// Load real data
-data_file = '/home/ryan/Documents/Projex/ENS184Project/pump_health_data.csv';
+// Load all modules using Windows-safe file paths
+exec(fullfile(base_dir, 'data_loader', 'load_data.sci'), -1);
+exec(fullfile(base_dir, 'differentiation', 'differentiation.sci'), -1);
+exec(fullfile(base_dir, 'integration', 'integration.sci'), -1);
+exec(fullfile(base_dir, 'user_interface', 'health_dashboard.sci'), -1);
+
+// Load real data from the parent directory
+data_file = fullfile(base_dir, '..', 'pump_health_data.csv');
 [pressure, voltage, hours, vibration] = load_data(data_file);
 
 // Student B verification
